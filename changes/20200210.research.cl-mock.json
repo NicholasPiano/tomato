@@ -1,0 +1,8 @@
+{
+  "type": "research",
+  "date": 20200210,
+  "description": "Adding cl-mock package to investigate how mocking is done. This is the last thing I don't understand before I am able to do testing properly.",
+  "children": {
+    "source": "https://github.com/Ferada/cl-mock"
+  }
+}
