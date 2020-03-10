@@ -19,10 +19,10 @@
     (mock-reset function1))
   (it "calls function1 if x is true"
     (function2 t)
-    (expect function1 :to-have-been-called-with "friend" :times 1))
+    (expect function1 :to-have-been-called-with "friend" :times 2))
   (it "returns \"Goodbye\" if x is false"
     (let
       ((result (function2 nil)))
-      (expect result :to-equal "Goodbye"))))
+      (expect result :to-equal "Goodbyae"))))
 
 (run *suite*)

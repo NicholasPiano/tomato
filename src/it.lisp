@@ -32,7 +32,8 @@
     (make-string
       (+ 2 (* 2 (depth (test-container it-container))))
       :initial-element #\Space)
-    (description it-container)))
+    (description it-container))
+  (mapcar (function report) (expects it-container)))
 
 (defmacro it (description &body body)
   `(if (not *test-container*)

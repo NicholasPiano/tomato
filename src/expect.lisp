@@ -5,6 +5,9 @@
   ((subject
      :initarg :subject
      :accessor subject)
+   (name
+     :initarg :name
+     :accessor name)
    (it-container
      :initarg :it-container
      :accessor it-container)
@@ -23,6 +26,16 @@
     (list value)
     (t (list value))))
 
+(defmethod report ((expect-container expect-container) &key single)
+  (mapcar
+    (lambda (reason)
+      (format t "~A- ~A~%"
+        (make-string
+          (+ 13 (* 2 (depth (test-container (it-container expect-container)))))
+          :initial-element #\Space)
+        reason))
+    (reasons expect-container)))
+
 (defmethod add-reason ((expect-container expect-container) reason)
   (set-unsuccessful *test-container*)
   (setf (successful-p *it-container*) nil)
@@ -40,7 +53,8 @@
    (times nil))
   (setf (has-been-run-p expect-container) t)
   (let
-    ((subject (subject expect-container)))
+    ((subject (subject expect-container))
+     (name (name expect-container)))
     (when (not (null to-have-been-called-with))
       (let*
         ((mock-index (mock-index *test-container*))
@@ -52,8 +66,8 @@
         (when (not matches-calls-p)
           (add-reason expect-container
             (format nil
-              "Expected ~A to be called with `~A`,
-              but it was called with `~A`."
+              "Expected ~A to be called with [~A],
+              but it was called with [~A]."
               subject
               to-have-been-called-with
               (mapcar
@@ -66,8 +80,8 @@
             (when (not matches-times-p)
               (add-reason expect-container
                 (format nil
-                  "Expected ~A to be called ~A times,
-                  but it was called ~A times."
+                  "Expected ~A to be called [~A] times,
+                  but it was called [~A] times."
                   subject
                   times
                   number-of-calls)))))))
@@ -76,7 +90,7 @@
         ((is-equal-p (equal subject to-equal)))
         (when (not is-equal-p)
           (add-reason expect-container
-            (format nil "~A is not equal to ~A" subject to-equal)))))
+            (format nil "Expected ~A to be equal to [~A] but got [~A]" name subject to-equal)))))
     (when (not (null to-be-truthy))
       (let ((is-truthy-p (not (null subject))))
         (when (not is-truthy-p)
@@ -102,6 +116,7 @@
        ((expect-container
          (make-instance (quote expect-container)
            :subject ,subject
+           :name (quote ,subject)
            :it-container *it-container*)))
        (setf (expects *it-container*)
          (append (expects *it-container*) (list expect-container)))
