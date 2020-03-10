@@ -1,0 +1,11 @@
+{
+  "type": "proposal",
+  "date": 20200216,
+  "description": "There should be a suite loop that reloads the target package and catalogues symbols and data hashes for comparison",
+  "children": {
+    "hash change": "Relevant tests should be re-run when the hash of their source code changes. I'm not sure yet how to achieve this.",
+    "function-lambda-expression": "Provides source text in SBCL",
+    "watch for file changes": "cl-inotify. Make sure it works on Centos. I should have a Centos system to test on.",
+    "command line interface": "cl-charms"
+  }
+}

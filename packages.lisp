@@ -8,7 +8,6 @@
     it-container
     it
     expect
-    fexpect
     mock
     mock-reset
     before-each))

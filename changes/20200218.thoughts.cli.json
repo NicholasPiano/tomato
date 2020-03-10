@@ -1,0 +1,9 @@
+{
+  "type": "thoughts",
+  "date": 20200218,
+  "description": "Some ideas about the command line interface",
+  "children": {
+    "reloading stuff": "How do I re-run tests when something changes?",
+    "directory model": "I already have access to the ASD file, so I should be able to associate a file with a bunch of symbols. Maybe I can tap into what ASDF is already doing. I need to be able to track each file individually."
+  }
+}

@@ -24,7 +24,10 @@
      :accessor mock-index)
    (before
      :initform nil
-     :accessor before)))
+     :accessor before)
+   (depth
+     :initarg :depth
+     :reader depth)))
 
 (defmethod do-mocks ((test-container test-container) mocks)
   (let
@@ -43,6 +46,8 @@
       (undo-mocks test-container rest-mocks))))
 
 (defmethod execute-before ((test-container test-container))
+  (when (parent test-container)
+    (execute-before (parent test-container)))
   (mapcar (lambda (before) (funcall before))
     (before test-container)))
 
@@ -75,6 +80,10 @@
      ((*test-container*
        (make-instance (quote test-container)
          :description ,description
-         :parent *test-container*)))
+         :parent *test-container*
+         :depth
+           (if *test-container*
+             (+ 1 (depth *test-container*))
+             0))))
      ,@body
      (execute *test-container*)))

@@ -36,7 +36,7 @@
   (setf (has-been-run-p expect-container) t)
   (let
     ((subject (subject expect-container)))
-    (when to-have-been-called-with
+    (when (not (null to-have-been-called-with))
       (let*
         ((mock-index (mock-index *test-container*))
          (mock-container (gethash subject mock-index))
@@ -76,7 +76,7 @@
           (add-reason expect-container
             (format t "~A is not equal to ~A" subject to-equal)))))))
 
-(defmacro expect (subject &body body)
+(defmacro expect-wrapper (subject &body body)
   `(if (not *it-container*)
      (error "`expect` requires an `it` wrapper.")
      (let
@@ -84,7 +84,11 @@
          (make-instance (quote expect-container)
            :subject ,subject
            :it-container *it-container*)))
+       (setf (expects *it-container*)
+         (append (expects *it-container*) (list expect-container)))
        (run-assertion expect-container ,@body))))
 
-(defmacro fexpect (subject &body body)
-  `(expect (quote ,subject) ,@body))
+(defmacro expect (subject &body body)
+  (if (fboundp subject)
+    `(expect-wrapper (quote ,subject) ,@body)
+    `(expect-wrapper ,subject ,@body)))

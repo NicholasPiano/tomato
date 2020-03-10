@@ -7,12 +7,15 @@
   ((description
      :initarg :description
      :accessor description)
+   (test-container
+     :initarg :test-container
+     :accessor test-container)
    (body
      :initarg :body
      :accessor body)
-   (test-container
-     :initarg :test-container
-     :accessor test-container)))
+   (expects
+     :initform nil
+     :accessor expects)))
 
 (defmethod execute ((it-container it-container))
   (let

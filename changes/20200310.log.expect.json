@@ -1,0 +1,9 @@
+{
+  "type": "log",
+  "date": 20200310,
+  "description": "Modify expect to support both functions and variables",
+  "children": {
+    "fboundp at compile time": "A symbol can be bound at compile time, allowing a test for fboundp to be made on a symbol used in a macro. This test is made in the macro, not in the returned code.",
+    "reference": "src/expect.lisp, line 92"
+  }
+}
