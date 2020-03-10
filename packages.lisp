@@ -2,6 +2,8 @@
 (defpackage :tomato
   (:use :cl :filter)
   (:export
+    *suite*
+    run
     test-container
     execute
     test

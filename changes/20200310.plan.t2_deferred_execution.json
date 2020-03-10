@@ -1,0 +1,11 @@
+{
+  "type": "plan",
+  "date": 20200310,
+  "description": "A plan for how to handle execution appropriately",
+  "children": {
+    "cli": "A fully-fledged command-line interface is not realistic at the moment. It would be better to run a single command that takes a pattern as an argument and executes any tests that match the argument. Perhaps there could a confirmation before the tests are run to confirm the tests that match.",
+    "matching": "I could use an existing string-matching system that uses the commonly understood format. There would need to be command-line options to filter results. Tests are matched by description, not by file. The filename could be displayed along with the test if it can be made available.",
+    "command-line options": "Can use existing package",
+    "deferred execution": "Test should not execute until the suite is run. The suite should be run using an argument that matches tests."
+  }
+}

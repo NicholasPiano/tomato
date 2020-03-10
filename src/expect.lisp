@@ -12,7 +12,7 @@
      :initform nil
      :accessor has-been-run-p)
    (successful-p
-     :initform nil
+     :initform t
      :accessor successful-p)
    (reasons
      :initform nil
@@ -24,12 +24,17 @@
     (t (list value))))
 
 (defmethod add-reason ((expect-container expect-container) reason)
+  (set-unsuccessful *test-container*)
+  (setf (successful-p *it-container*) nil)
+  (setf (successful-p expect-container) nil)
   (setf (reasons expect-container)
     (append (reasons expect-container) (list reason))))
 
-(defmethod run-assertion
+(defmethod run-assertion-with-flags
   ((expect-container expect-container)
    &key
+   (to-be-truthy nil)
+   (to-be-falsy nil)
    (to-equal nil)
    (to-have-been-called-with nil)
    (times nil))
@@ -44,7 +49,6 @@
          (matching-calls
           (match-call mock-container (force-list to-have-been-called-with)))
          (matches-calls-p (> (length matching-calls) 0)))
-        (setf (successful-p expect-container) matches-calls-p)
         (when (not matches-calls-p)
           (add-reason expect-container
             (format nil
@@ -59,7 +63,6 @@
           (let*
             ((number-of-calls (length calls))
              (matches-times-p (equal times number-of-calls)))
-            (setf (successful-p expect-container) matches-times-p)
             (when (not matches-times-p)
               (add-reason expect-container
                 (format nil
@@ -71,12 +74,28 @@
     (when to-equal
       (let
         ((is-equal-p (equal subject to-equal)))
-        (setf (successful-p expect-container) is-equal-p)
         (when (not is-equal-p)
           (add-reason expect-container
-            (format t "~A is not equal to ~A" subject to-equal)))))))
+            (format nil "~A is not equal to ~A" subject to-equal)))))
+    (when (not (null to-be-truthy))
+      (let ((is-truthy-p (not (null subject))))
+        (when (not is-truthy-p)
+          (add-reason expect-container
+            (format nil "~A is not truthy" subject)))))
+    (when (not (null to-be-falsy))
+      (let ((is-falsy-p (null subject)))
+        (when (not is-falsy-p)
+          (add-reason expect-container
+            (format nil "~A is not falsy" subject)))))))
 
-(defmacro expect-wrapper (subject &body body)
+(defmacro run-assertion (expect-container flag &body body)
+  (case flag
+    ((:to-be-truthy
+      :to-be-falsy)
+     `(run-assertion-with-flags ,expect-container ,flag t))
+    (t `(run-assertion-with-flags ,expect-container ,flag ,@body))))
+
+(defmacro expect-with-canonical-subject (subject &body body)
   `(if (not *it-container*)
      (error "`expect` requires an `it` wrapper.")
      (let
@@ -90,5 +109,5 @@
 
 (defmacro expect (subject &body body)
   (if (fboundp subject)
-    `(expect-wrapper (quote ,subject) ,@body)
-    `(expect-wrapper ,subject ,@body)))
+    `(expect-with-canonical-subject (quote ,subject) ,@body)
+    `(expect-with-canonical-subject ,subject ,@body)))

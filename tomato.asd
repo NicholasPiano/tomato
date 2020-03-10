@@ -11,7 +11,8 @@
      (:module "src"
       :serial t
       :components
-        ((:file "test")
+        ((:file "suite")
+         (:file "test")
          (:file "before-each")
          (:file "mock")
          (:file "expect")

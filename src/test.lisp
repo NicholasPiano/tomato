@@ -16,6 +16,9 @@
    (its
      :initform nil
      :accessor its)
+   (successful-p
+     :initform t
+     :accessor successful-p)
    (mocks
      :initform nil
      :accessor mocks)
@@ -61,9 +64,33 @@
       (execute-its test-container rest-its))))
 
 (defmethod execute ((test-container test-container))
-  (do-mocks test-container (mocks test-container))
-  (execute-its test-container (its test-container))
-  (undo-mocks test-container (mocks test-container)))
+  (let
+    ((*test-container* test-container))
+    (do-mocks test-container (mocks test-container))
+    (execute-its test-container (its test-container))
+    (undo-mocks test-container (mocks test-container))))
+
+(defmethod report ((test-container test-container) &key (single nil))
+  (let
+    ((depth (depth test-container))
+     (description (description test-container))
+     (successful-p (successful-p test-container))
+     (it-containers (its test-container))
+     (test-containers (tests test-container)))
+    (format t "~A ~ATEST: ~A~%"
+      (if successful-p "[PASSED]" "[FAILED]")
+      (make-string
+        (* 2 depth)
+        :initial-element #\Space)
+      description)
+    (when (or single (not successful-p))
+      (mapcar (function report) it-containers)
+      (mapcar (function report) test-containers))))
+
+(defmethod set-unsuccessful ((test-container test-container))
+  (setf (successful-p test-container) nil)
+  (when (parent test-container)
+    (set-unsuccessful (parent test-container))))
 
 (defmethod add-mock ((test-container test-container) mock-container)
   (setf (gethash (mock-symbol mock-container) (mock-index test-container))
@@ -86,4 +113,6 @@
              (+ 1 (depth *test-container*))
              0))))
      ,@body
-     (execute *test-container*)))
+     (when (null (parent *test-container*))
+       (setf (test-containers *suite*)
+         (append (test-containers *suite*) (list *test-container*))))))

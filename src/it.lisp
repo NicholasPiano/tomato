@@ -10,6 +10,9 @@
    (test-container
      :initarg :test-container
      :accessor test-container)
+   (successful-p
+     :initform t
+     :accessor successful-p)
    (body
      :initarg :body
      :accessor body)
@@ -22,6 +25,14 @@
     ((*it-container* it-container)
      (body (body it-container)))
     (funcall body)))
+
+(defmethod report ((it-container it-container) &key single)
+  (format t "~A ~Ait ~A~%"
+    (if (successful-p it-container) "[PASSED]" "[FAILED]")
+    (make-string
+      (+ 2 (* 2 (depth (test-container it-container))))
+      :initial-element #\Space)
+    (description it-container)))
 
 (defmacro it (description &body body)
   `(if (not *test-container*)

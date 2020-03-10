@@ -1,0 +1,12 @@
+{
+  "type": "proposal",
+  "date": 20200310,
+  "description": "Divide test execution into stages for gathering, resolution, and display.",
+  "children": {
+    "previously": "changes/20200216.proposal.suite.json",
+    "gathering": "A dynamic variable should serve as the container for all tests in the suite. This can be bound to a suite object that all tests append themselves to.",
+    "resolution": "Tests should not run until a run method is called on the root suite object. This run should come with a query that matches tests.",
+    "files": "Display should be by file. If there are multiple files matched, a successful run should not display detail. In the case of a failure or a single file, detail should be displayed.",
+    "reloading": "Tests should have a record of the path of both their file and the file containing their target. This might require a more complex model of the system."
+  }
+}
