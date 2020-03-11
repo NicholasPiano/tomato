@@ -1,0 +1,8 @@
+{
+  "type": "proposal",
+  "date": 20200310,
+  "description": "There needs to be some clean way of including mocks from parent tests.",
+  "children": {
+    
+  }
+}

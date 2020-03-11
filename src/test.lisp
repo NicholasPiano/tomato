@@ -32,43 +32,56 @@
      :initarg :depth
      :reader depth)))
 
-(defmethod do-mocks ((test-container test-container) mocks)
-  (let
-    ((first-mock (first mocks))
-     (rest-mocks (rest mocks)))
-    (when first-mock
-      (do-mock first-mock)
-      (do-mocks test-container rest-mocks))))
-
-(defmethod undo-mocks ((test-container test-container) mocks)
-  (let
-    ((first-mock (first mocks))
-     (rest-mocks (rest mocks)))
-    (when first-mock
-      (undo-mock first-mock)
-      (undo-mocks test-container rest-mocks))))
-
 (defmethod execute-before ((test-container test-container))
-  (when (parent test-container)
-    (execute-before (parent test-container)))
-  (mapcar (lambda (before) (funcall before))
-    (before test-container)))
-
-(defmethod execute-its ((test-container test-container) its)
-  (let
-    ((first-it (first its))
-     (rest-its (rest its)))
-    (when first-it
-      (execute-before test-container)
-      (execute first-it)
-      (execute-its test-container rest-its))))
+  (let ((*test-container* (parent test-container)))
+    (when *test-container*
+      (execute-before *test-container*)))
+  (mapcar (function funcall) (before test-container)))
 
 (defmethod execute ((test-container test-container))
   (let
     ((*test-container* test-container))
-    (do-mocks test-container (mocks test-container))
-    (execute-its test-container (its test-container))
-    (undo-mocks test-container (mocks test-container))))
+    (mapcar (function do-mock) (mocks test-container))
+    (mapcar
+      (lambda (it)
+        (execute-before test-container)
+        (execute it))
+      (its test-container))
+    (mapcar (function execute) (tests test-container))
+    (mapcar (function undo-mock) (mocks test-container))))
+
+(defmethod set-unsuccessful ((test-container test-container))
+  (setf (successful-p test-container) nil)
+  (when (parent test-container)
+    (set-unsuccessful (parent test-container))))
+
+(defmethod add-mock ((test-container test-container) mock-container)
+  (setf (gethash (mock-symbol mock-container) (mock-index test-container))
+    mock-container)
+  (setf (mocks test-container)
+    (append (mocks test-container) (list mock-container))))
+
+(defmethod add-before ((test-container test-container) before)
+  (setf (before test-container)
+    (append (before test-container) (list before))))
+
+(defmethod match-mock-call ((test-container test-container) subject query)
+  (let*
+    ((mock-index (mock-index test-container))
+     (mock-container
+      (when mock-index
+        (gethash subject mock-index)))
+     (calls
+      (when mock-container
+        (calls mock-container)))
+     (matching-calls
+      (when calls
+        (match-call mock-container (force-list query))))
+     (parent
+      (parent test-container)))
+    (or
+      matching-calls
+      (when parent (match-mock-call parent subject query)))))
 
 (defmethod report ((test-container test-container) &key (single nil))
   (let
@@ -87,21 +100,6 @@
       (mapcar (function report) it-containers)
       (mapcar (function report) test-containers))))
 
-(defmethod set-unsuccessful ((test-container test-container))
-  (setf (successful-p test-container) nil)
-  (when (parent test-container)
-    (set-unsuccessful (parent test-container))))
-
-(defmethod add-mock ((test-container test-container) mock-container)
-  (setf (gethash (mock-symbol mock-container) (mock-index test-container))
-    mock-container)
-  (setf (mocks test-container)
-    (append (mocks test-container) (list mock-container))))
-
-(defmethod add-before ((test-container test-container) before)
-  (setf (before test-container)
-    (append (before test-container) (list before))))
-
 (defmacro test (description &body body)
   `(let
      ((*test-container*
@@ -113,6 +111,8 @@
              (+ 1 (depth *test-container*))
              0))))
      ,@body
-     (when (null (parent *test-container*))
+     (if (null (parent *test-container*))
        (setf (test-containers *suite*)
-         (append (test-containers *suite*) (list *test-container*))))))
+         (append (test-containers *suite*) (list *test-container*)))
+       (setf (tests (parent *test-container*))
+         (append (tests (parent *test-container*)) (list *test-container*))))))

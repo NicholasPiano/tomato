@@ -57,11 +57,8 @@
      (name (name expect-container)))
     (when (not (null to-have-been-called-with))
       (let*
-        ((mock-index (mock-index *test-container*))
-         (mock-container (gethash subject mock-index))
-         (calls (calls mock-container))
-         (matching-calls
-          (match-call mock-container (force-list to-have-been-called-with)))
+        ((matching-calls
+          (match-mock-call *test-container* subject to-have-been-called-with))
          (matches-calls-p (> (length matching-calls) 0)))
         (when (not matches-calls-p)
           (add-reason expect-container
@@ -75,7 +72,7 @@
                 calls))))
         (when (not (null times))
           (let*
-            ((number-of-calls (length calls))
+            ((number-of-calls (length matching-calls))
              (matches-times-p (equal times number-of-calls)))
             (when (not matches-times-p)
               (add-reason expect-container
