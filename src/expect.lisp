@@ -64,7 +64,8 @@
   ((expect-container expect-container) &key with invert)
   (let*
     ((subject (subject expect-container))
-     (calls (mock-calls-if-no-match *test-container* subject with)))
+     (mock-result (mock-calls-if-no-match *test-container* subject with))
+     (calls (second mock-result)))
     (if invert
       (when (not calls)
         (add-reason expect-container
@@ -102,6 +103,28 @@
             times
             calls))))))
 
+(defmethod assert-equal
+  ((expect-container expect-container) &key to using invert)
+  (let
+    ((subject (subject expect-container))
+     (name (name expect-container))
+     (eq-fn (or using (function equal))))
+    (if invert
+      (when (funcall eq-fn subject to)
+        (add-reason expect-container
+          (format nil
+            "Expected ~A not to be equal to [~A], but it was."
+            name
+            to)))
+      (when (not (funcall eq-fn subject to))
+        (add-reason expect-container
+          (format nil
+            "Expected ~A to be equal to [~A],
+            but it was equal to [~A]."
+            name
+            to
+            subject))))))
+
 (defmethod run-assertion-with-flags
   ((expect-container expect-container)
    &key
@@ -110,6 +133,7 @@
    (to-be-falsy nil)
    (to-have-been-called nil)
    (to-equal nil)
+   (using nil)
    (to-have-been-called-with nil)
    (times nil)
    (to-have-been-called-times nil))
@@ -128,11 +152,10 @@
         :times (or times to-have-been-called-times)
         :invert invert))
     (when to-equal
-      (let
-        ((is-equal-p (xor invert (equal subject to-equal))))
-        (when (not is-equal-p)
-          (add-reason expect-container
-            (format nil "Expected ~A to be equal to [~A] but got [~A]" name subject to-equal)))))
+      (assert-equal expect-container
+        :to to-equal
+        :using using
+        :invert invert))
     (when (not (null to-be-truthy))
       (let ((is-truthy-p (not (null subject))))
         (when (not is-truthy-p)

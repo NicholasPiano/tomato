@@ -109,9 +109,7 @@
      (matching-calls
       (when mock-container
         (match-call mock-container (force-list query)))))
-    (if (not matching-calls)
-      calls
-      t)))
+    (values matching-calls calls)))
 
 (defmethod report ((test-container test-container) &key (single nil))
   (let
