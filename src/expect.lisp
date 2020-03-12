@@ -43,48 +43,93 @@
   (setf (reasons expect-container)
     (append (reasons expect-container) (list reason))))
 
+(defmethod assert-called ((expect-container expect-container) &key invert)
+  (let*
+    ((subject (subject expect-container))
+     (calls (mock-calls *test-container* subject)))
+    (if invert
+      (when calls
+        (add-reason expect-container
+          (format nil
+            "Expected ~A not to be called, but it was called with [~A]."
+            subject
+            (mapcar (lambda (call) (arguments call)) calls))))
+      (when (not calls)
+        (add-reason expect-container
+          (format nil
+            "Expected ~A to be called, but it was not."
+            subject))))))
+
+(defmethod assert-called-with
+  ((expect-container expect-container) &key with invert)
+  (let*
+    ((subject (subject expect-container))
+     (calls (mock-calls-if-no-match *test-container* subject with)))
+    (if invert
+      (when (not calls)
+        (add-reason expect-container
+          (format nil
+            "Expected ~A not to be called with [~A], but it was."
+            subject
+            with)))
+      (when calls
+        (add-reason expect-container
+          (format nil
+            "Expected ~A to be called with [~A],
+            but it was called with [~A]."
+            subject
+            with
+            (mapcar (lambda (call) (arguments call)) calls)))))))
+
+(defmethod assert-called-times
+  ((expect-container expect-container) &key times invert)
+  (let*
+    ((subject (subject expect-container))
+     (calls (length (mock-calls *test-container* subject))))
+    (if invert
+      (when (equal calls times)
+        (add-reason expect-container
+          (format nil
+            "Expected ~A not to be called [~A] times, but it was."
+            subject
+            times)))
+      (when (not (equal calls times))
+        (add-reason expect-container
+          (format nil
+            "Expected ~A to be called [~A] times,
+            but it was called [~A] times."
+            subject
+            times
+            calls))))))
+
 (defmethod run-assertion-with-flags
   ((expect-container expect-container)
    &key
+   (invert nil)
    (to-be-truthy nil)
    (to-be-falsy nil)
+   (to-have-been-called nil)
    (to-equal nil)
    (to-have-been-called-with nil)
-   (times nil))
+   (times nil)
+   (to-have-been-called-times nil))
   (setf (has-been-run-p expect-container) t)
   (let
     ((subject (subject expect-container))
      (name (name expect-container)))
+    (when to-have-been-called
+      (assert-called expect-container :invert invert))
     (when (not (null to-have-been-called-with))
-      (let*
-        ((matching-calls
-          (match-mock-call *test-container* subject to-have-been-called-with))
-         (matches-calls-p (> (length matching-calls) 0)))
-        (when (not matches-calls-p)
-          (add-reason expect-container
-            (format nil
-              "Expected ~A to be called with [~A],
-              but it was called with [~A]."
-              subject
-              to-have-been-called-with
-              (mapcar
-                (lambda (call) (arguments call))
-                calls))))
-        (when (not (null times))
-          (let*
-            ((number-of-calls (length matching-calls))
-             (matches-times-p (equal times number-of-calls)))
-            (when (not matches-times-p)
-              (add-reason expect-container
-                (format nil
-                  "Expected ~A to be called [~A] times,
-                  but it was called [~A] times."
-                  subject
-                  times
-                  number-of-calls)))))))
+      (assert-called-with expect-container
+        :with to-have-been-called-with
+        :invert invert))
+    (when (or (not (null times)) (not (null to-have-been-called-times)))
+      (assert-called-times expect-container
+        :times (or times to-have-been-called-times)
+        :invert invert))
     (when to-equal
       (let
-        ((is-equal-p (equal subject to-equal)))
+        ((is-equal-p (xor invert (equal subject to-equal))))
         (when (not is-equal-p)
           (add-reason expect-container
             (format nil "Expected ~A to be equal to [~A] but got [~A]" name subject to-equal)))))
@@ -99,12 +144,18 @@
           (add-reason expect-container
             (format nil "~A is not falsy" subject)))))))
 
-(defmacro run-assertion (expect-container flag &body body)
-  (case flag
-    ((:to-be-truthy
-      :to-be-falsy)
-     `(run-assertion-with-flags ,expect-container ,flag t))
-    (t `(run-assertion-with-flags ,expect-container ,flag ,@body))))
+(defmacro run-assertion (expect-container flag &optional (value nil) &body body)
+  (if value
+    (typecase value
+      (keyword
+       (case flag
+         ((:to-be-truthy
+           :to-be-falsy
+           :to-have-been-called)
+          `(run-assertion ,expect-container ,value ,@body ,flag t))
+         (:not `(run-assertion ,expect-container ,value ,@body :invert t))))
+      (t `(run-assertion-with-flags ,expect-container ,flag ,value ,@body)))
+    `(run-assertion-with-flags ,expect-container ,flag t)))
 
 (defmacro expect-with-canonical-subject (subject &body body)
   `(if (not *it-container*)

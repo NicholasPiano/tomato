@@ -53,7 +53,7 @@
     (if (and first-list second-list)
       (list-equal first-list second-list)
       (if fn
-        (funcall fn (list first-item second-item))
+        (funcall fn first-item second-item)
         (equal first-item second-item)))))
 
 (defmethod match-call ((mock-container mock-container) arguments)
@@ -79,8 +79,8 @@
         (lambda (&rest rest)
           (add-call mock-container rest)
           (if ,as
-            (funcall ,as rest)
-            (funcall original rest)))))
+            (apply ,as rest)
+            (apply original rest)))))
      (setf (mocked mock-container) mock-function)
      (add-mock *test-container* mock-container)))
 

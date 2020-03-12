@@ -83,6 +83,36 @@
       matching-calls
       (when parent (match-mock-call parent subject query)))))
 
+(defmethod get-mock-container ((test-container test-container) subject)
+  (let*
+    ((mock-index (mock-index test-container))
+     (mock-container
+      (when mock-index
+        (gethash subject mock-index))))
+    (or
+      mock-container
+      (let
+        ((parent (parent test-container)))
+        (when parent (get-mock-container parent subject))))))
+
+(defmethod mock-calls ((test-container test-container) subject)
+  (let*
+    ((mock-container (get-mock-container test-container subject))
+     (calls (when mock-container (calls mock-container))))
+    calls))
+
+(defmethod mock-calls-if-no-match
+  ((test-container test-container) subject query)
+  (let*
+    ((mock-container (get-mock-container test-container subject))
+     (calls (when mock-container (calls mock-container)))
+     (matching-calls
+      (when mock-container
+        (match-call mock-container (force-list query)))))
+    (if (not matching-calls)
+      calls
+      t)))
+
 (defmethod report ((test-container test-container) &key (single nil))
   (let
     ((depth (depth test-container))
@@ -98,7 +128,9 @@
       description)
     (when (or single (not successful-p))
       (mapcar (function report) it-containers)
-      (mapcar (function report) test-containers))))
+      (mapcar
+        (lambda (test) (report test :single single))
+        test-containers))))
 
 (defmacro test (description &body body)
   `(let
